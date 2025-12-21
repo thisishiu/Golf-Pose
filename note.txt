@@ -1,0 +1,26 @@
+test
+    clone golfdb-master -> có SwingNet
+        tải các model pretrain
+
+    golfdb-master\model.py
+        đọc vào cpu, sửa mấy chỗ .cuda()
+    
+    golfdb-master\data\generate_splits.py
+        #25, #31, #36 #4 đổi đường dẫn (thêm gốc)
+
+    generate_splits.py
+        đã tạo ra các metadata trong data/raw/video_160_split/
+
+test model
+    dựa vào file test, code module lấy vector đặc trưng cho từng động tác. [X]
+    lấy pose cho từng frame ở đầu ra swingnet
+
+    dùng yolo crop video thành 160x160, tỉ lệ swingnet đúng tăng lên ~100% <> thời gian lâu
+    dùng scale thì nhanh nhưng không hề chính xác
+    => fix crop, vừa nhanh vừa chính xác [Xong phần SwingNet]
+
+    test pose bằng yolo11n-pose.pt
+    đã lấy được vector đặc trưng của 1 cú đánh
+
+    tiếp theo là lấy vector đặc trung cho 1 cú đánh diểm cao ~10, dựa vào golfdb
+    

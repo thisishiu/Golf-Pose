@@ -1,0 +1,19 @@
+
+# __pycache__/
+*/__pycache__/
+
+# data, material, ...
+data/*
+test
+Material
+
+# media
+image
+
+# allow DVC metadata
+!data/**/raw.dvc
+!data/**/.gitkeep
+
+# model checkpoints
+checkpoints/**/*.tar
+checkpoints/**/*.pt

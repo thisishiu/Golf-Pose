@@ -3,7 +3,7 @@ import numpy as np
 from ultralytics import YOLO
 
 class RobustSmartCropper:
-    def __init__(self, model_path='checkpoints\yolov8n.pt', output_size=(160, 160)):
+    def __init__(self, model_path='checkpoints/yolov8n.pt', output_size=(160, 160)):
         self.model = YOLO(model_path)
         self.output_size = output_size
 
@@ -95,7 +95,6 @@ class RobustSmartCropper:
         cap = cv2.VideoCapture(input_path)
         if not cap.isOpened(): return
 
-        # --- BƯỚC 1: QUÉT TÌM NGƯỜI ---
         crop_box = self.scan_for_crop_box(cap, num_samples=10)
         
         # Fallback: Nếu quét nát video không thấy ai, dùng Center Crop
@@ -108,7 +107,6 @@ class RobustSmartCropper:
             else:
                 return # Video hỏng hoàn toàn
 
-        # --- BƯỚC 2: XỬ LÝ HÀNG LOẠT ---
         # Reset video về đầu
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
         

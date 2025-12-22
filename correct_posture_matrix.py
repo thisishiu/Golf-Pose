@@ -5,6 +5,7 @@ from model.dataloader import *
 from model.Caddie import CaddieSetExtractor
 from torch.utils.data import DataLoader
 from torchvision import transforms
+from tqdm import tqdm
 # from model.SwingNet import EventDetector
 # from model.MobileNetV2 import MobileNetV2
 
@@ -25,16 +26,33 @@ if __name__ == '__main__':
     extractor = CaddieSetExtractor()
 
     good_pose_features = None
-    for i, sample in enumerate(data_loader):
-        if i % 100 == 0: 
-            print(f"Sample {i}")
+    collected_features = []
+    for i, sample in enumerate(tqdm(data_loader)):
+        try:
+            sequence = sample['images']  # (B, F, C, H, W)
+            features = extractor.process_sequence(sequence)
 
-        sequence = sample['images']  # (B, F, C, H, W)
-        features = extractor.process_sequence(sequence)
-        
-        # EWA
-        alpha = 0.9
-        good_pose_features = alpha * good_pose_features + (1 - alpha) * features if i > 0 else features
-        good_pose_features = good_pose_features / (1 - alpha**(i + 1))
+            if np.all(features == 0):
+                continue
 
-    torch.save(good_pose_features, 'checkpoints/good_posture_features.pt')
+            collected_features.append(features)
+#
+        except Exception as e:
+            print(f"Error processing sample {i}: {e}")
+
+    if len(collected_features) > 0:
+        feature_matrix = np.array(collected_features)
+        mean_vector = np.mean(feature_matrix, axis=0)
+        std_vector = np.std(feature_matrix, axis=0)
+        std_vector[std_vector == 0] = 1e-6
+        save_dict = {
+            'mean': mean_vector,
+            'std': std_vector, 
+            'n_samples': len(collected_features),
+            'table': feature_matrix
+        }     
+        torch.save(save_dict, 'checkpoints/golf_pose_stats.pt')
+        print("Saved")
+        print("Mean vector shape:", mean_vector.shape)
+        print("Std vector shape:", std_vector.shape)
+        print("len:", len(collected_features))

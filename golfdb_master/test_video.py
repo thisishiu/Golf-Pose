@@ -45,8 +45,7 @@ class SampleVideo(Dataset):
         for pos in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT))):
             _, img = cap.read()
             resized = cv2.resize(img, (new_size[1], new_size[0]))
-            b_img = cv2.copyMakeBorder(resized, top, bottom, left, right, cv2.BORDER_CONSTANT,
-                                       value=[0.406 * 255, 0.456 * 255, 0.485 * 255])  # ImageNet means (BGR)
+            b_img = cv2.copyMakeBorder(resized, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0.406 * 255, 0.456 * 255, 0.485 * 255])  # ImageNet means (BGR)
 
             b_img_rgb = cv2.cvtColor(b_img, cv2.COLOR_BGR2RGB)
             images.append(b_img_rgb)
@@ -102,7 +101,7 @@ if __name__ == '__main__':
                 image_batch = images[:, batch * seq_length:, :, :, :]
             else:
                 image_batch = images[:, batch * seq_length:(batch + 1) * seq_length, :, :, :]
-            print(image_batch.shape)
+            # print(image_batch.shape)
             logits = model(image_batch)
             # logits = model(image_batch.cuda())
             if batch == 0:

@@ -80,7 +80,7 @@ class ToTensor(object):
         return {
             'images': torch.from_numpy(images).float().div(255.),
             'labels': torch.from_numpy(labels).long(),
-            'events': torch.from_numpy(sample['events']).long(),
+            'events': torch.from_numpy(sample['events']).long() if sample.get('events') is not None else None,
             'path': sample.get('path', None)
             }
 
@@ -97,7 +97,7 @@ class Normalize(object):
         return {
             'images': images,
             'labels': labels,
-            'events': sample['events'],
+            'events': sample['events'] if sample.get('events') is not None else None,
             'path': sample.get('path', None)
             }
 
@@ -105,8 +105,11 @@ class Normalize(object):
         """Denormalize a tensor image."""
         if tensor.dim() == 4:
             raise ValueError("[Normalize] Inverting expected tensor to be 5-D (B, F, C, H, W), got {}-D".format(tensor.dim()))
+        device = tensor.device
+        mean = self.mean.to(device)
+        std = self.std.to(device)
         tensor = tensor.clone()
-        tensor.mul_(self.std[None, None, :, None, None]).add_(self.mean[None, None, :, None, None])
+        tensor.mul_(std[None, None, :, None, None]).add_(mean[None, None, :, None, None])
         return tensor
 
 if __name__ == '__main__':

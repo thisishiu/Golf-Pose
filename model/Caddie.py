@@ -109,10 +109,12 @@ class CaddieSetExtractor:
                 # .clamp(0, 255)
             )
         
-        sequence = sequence.squeeze(0)  # (F, C, H, W) - Batch gồm 8 frames
+        sequence = sequence.squeeze(0)  # (F, C, H, W)
         
         # Ultralytics nhận Tensor [B, C, H, W] trên GPU. Không cần chuyển về numpy
         results = self.pose_model(sequence, verbose=False, conf=0.1)
+        # for i, r in enumerate(results):
+            # print(f"result: {r.keypoints}")
 
         #Post-processing (Cần convert về CPU numpy để tính toán hình học)
         # Bước này nhẹ, nên làm ở CPU là ổn
@@ -138,10 +140,12 @@ class CaddieSetExtractor:
             else:
                 all_15_metrics = self.calculate_all_15_metrics(address_kp, address_kp)
 
-            metrics_to_take = self.SELECTED_FEATURES.get(i, [])
-            for metric_name in metrics_to_take:
-                value = all_15_metrics.get(metric_name, 0.0)
-                final_feature_vector.append(value)
+            # metrics_to_take = self.SELECTED_FEATURES.get(i, [])
+            # for metric_name in metrics_to_take:
+            #     value = all_15_metrics.get(metric_name, 0.0)
+                # final_feature_vector.append(value)
+            for metric_to_take in all_15_metrics.keys():
+                final_feature_vector.append(all_15_metrics[metric_to_take])
 
         return np.array(final_feature_vector)
 

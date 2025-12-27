@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
 
     RAW_DIR = 'data/v1/TDTU-Golf-Pose-v1_fix_crop'
-    OUT_DIR = 'test/TDTU-Golf-Pose-v1_features'
+    OUT_DIR = 'test/TDTU-Golf-Pose-v1_120ft'
 
     for root, _, files in os.walk(RAW_DIR):
         for fname in files:

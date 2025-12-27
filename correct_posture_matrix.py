@@ -28,31 +28,26 @@ if __name__ == '__main__':
     good_pose_features = None
     collected_features = []
     for i, sample in enumerate(tqdm(data_loader)):
-        try:
-            sequence = sample['images']  # (B, F, C, H, W)
+        # try:
+            video = sample['images']  # (B, F, C, H, W)
+            events = sample['events'].reshape(-1)  # (num_events,)     
+
+            sequence = video[:, events, :, :, :]
             features = extractor.process_sequence(sequence)
 
             if np.all(features == 0):
                 continue
 
             collected_features.append(features)
+            print(f"Processed sample {i}, shape: {features.shape}.")
 #
-        except Exception as e:
-            print(f"Error processing sample {i}: {e}")
+        # except Exception as e:
+        #     print(f"Error processing sample {i}: {e}")
 
     if len(collected_features) > 0:
         feature_matrix = np.array(collected_features)
-        mean_vector = np.mean(feature_matrix, axis=0)
-        std_vector = np.std(feature_matrix, axis=0)
-        std_vector[std_vector == 0] = 1e-6
         save_dict = {
-            'mean': mean_vector,
-            'std': std_vector, 
-            'n_samples': len(collected_features),
             'table': feature_matrix
         }     
-        torch.save(save_dict, 'checkpoints/golf_pose_stats.pt')
+        torch.save(save_dict, 'checkpoints/golf_pose_stats (*).pt')
         print("Saved")
-        print("Mean vector shape:", mean_vector.shape)
-        print("Std vector shape:", std_vector.shape)
-        print("len:", len(collected_features))

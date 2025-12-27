@@ -49,7 +49,6 @@ class CaddieSetExtractor:
         return np.degrees(np.arctan2(b[1] - a[1], b[0] - a[0]))
 
     def calculate_all_15_metrics(self, k, address_k):
-        # ... (Giữ nguyên logic hàm này như cũ) ...
         kp = self.KP
         feats = {}
         
@@ -99,9 +98,6 @@ class CaddieSetExtractor:
         Output: Numpy array shape (40,)
         """
         sequence = sequence.to(self.device)
-
-        if sequence.dim() == 4:
-            sequence = sequence.unsqueeze(0) # (B, F, C, H, W)
         
         sequence = (
             self.norm.inverse(sequence)
@@ -128,7 +124,7 @@ class CaddieSetExtractor:
                 break
         
         if address_kp is None: 
-            # print("[CaddieSetExtractor] Warning: No person detected.")
+            print("[CaddieSetExtractor] Warning: No address_kp detected.")
             return np.zeros(40)
 
         final_feature_vector = []
@@ -144,6 +140,8 @@ class CaddieSetExtractor:
             # for metric_name in metrics_to_take:
             #     value = all_15_metrics.get(metric_name, 0.0)
                 # final_feature_vector.append(value)
+
+            # lấy tất cả 15 metrics
             for metric_to_take in all_15_metrics.keys():
                 final_feature_vector.append(all_15_metrics[metric_to_take])
 

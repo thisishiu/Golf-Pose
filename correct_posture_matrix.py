@@ -39,7 +39,7 @@ if __name__ == '__main__':
                 continue
 
             collected_features.append(features)
-            print(f"Processed sample {i}, shape: {features.shape}.")
+            # print(f"Processed sample {i}, shape: {features.shape}.")
 #
         # except Exception as e:
         #     print(f"Error processing sample {i}: {e}")

@@ -1,14 +1,15 @@
 from scipy.io import loadmat
 import pandas as pd
 
-x = loadmat('golfdb-master/data/golfDB.mat')
+x = loadmat('golfdb_master/data/golfDB.mat')
 l = list(x['golfDB'][0])
 d = dict()
 for idx, k in enumerate(l):
     d["{:3d}".format(idx)] = list(l[idx])
 df = pd.DataFrame(d).T
 df.columns = ["id","youtube_id","player", "sex", "club","view","slow","events","bbox","split"]
-
+print(df['view'])
+exit()
 # data format cleansing
 df['id'] = df['id'].apply(lambda x: x[0][0])
 df['youtube_id'] = df['youtube_id'].apply(lambda x: x[0])

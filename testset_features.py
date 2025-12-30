@@ -6,6 +6,7 @@ from torchvision import transforms
 from model.Caddie import CaddieSetExtractor
 from model.dataloader import *
 from model.SwingNet import EventDetector
+from model.GolfView import ViewDetector
 
 def get_video(path):
     input_size = 160
@@ -55,9 +56,12 @@ if __name__ == '__main__':
     model.eval()
     print("Loaded model weights")
 
+    # Khởi tạo extractor
+    extractor = CaddieSetExtractor()
+    view_detector = ViewDetector()
 
     RAW_DIR = 'data/v1/TDTU-Golf-Pose-v1_fix_crop'
-    OUT_DIR = 'test/TDTU-Golf-Pose-v1_120ft'
+    OUT_DIR = 'test/TDTU-Golf-Pose-v1'
 
     for root, _, files in os.walk(RAW_DIR):
         for fname in files:
@@ -87,17 +91,17 @@ if __name__ == '__main__':
                 batch += 1
 
             events = np.argmax(probs, axis=0)[:-1]
-            print(f"Event: {events}") # (8,)
+            # print(f"Event: {events}") # (8,)
             # print(images.shape) # torch.Size([1, 223, 3, 160, 160])
             # exit()
+
             sequence = images[:,events,:,:,:] # torch.Size([1, 8, 3, 160, 160])
+            # print(f"Loaded video frames shape: {sequence.shape}")  
 
-            print(f"Loaded video frames shape: {sequence.shape}")  
+            view = view_detector.get_view(in_path)
+            print(f"Detected view: {view}")
 
-            # Khởi tạo extractor
-            extractor = CaddieSetExtractor()
-
-            feature_vector = extractor.process_sequence(sequence)
+            feature_vector = extractor.process_sequence(sequence, view='FACEON' if view == 'face-on' else 'DTL')  # (embedding_dim,)
 
             print(f"Input shape: {sequence.shape}")
             print(f"Output Feature Vector shape: {feature_vector.shape}")

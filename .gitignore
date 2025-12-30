@@ -16,5 +16,4 @@ image
 !data/**/.gitkeep
 
 # model checkpoints
-checkpoints/**/*.tar
-checkpoints/**/*.pt
+checkpoints/*

@@ -216,14 +216,14 @@ class CaddieSetExtractor:
                     all_9_metrics = self.get_DTL_metrics(address_kp, address_kp)
 
                 # chỉ lấy các metrics cần thiết
-                metrics_to_take = self.DTL_SELECTED_FEATURES.get(i, [])
-                for metric_name in metrics_to_take:
-                    value = all_9_metrics.get(metric_name, 0.0)
-                    final_feature_vector.append(value)
+                # metrics_to_take = self.DTL_SELECTED_FEATURES.get(i, [])
+                # for metric_name in metrics_to_take:
+                #     value = all_9_metrics.get(metric_name, 0.0)
+                #     final_feature_vector.append(value)
 
                 # lấy tất cả 9 metrics
-                # for metric_to_take in all_9_metrics.keys():
-                #     final_feature_vector.append(all_9_metrics[metric_to_take])
+                for metric_to_take in all_9_metrics.keys():
+                    final_feature_vector.append(all_9_metrics[metric_to_take])
 
         else:
             print(f"[CaddieSetExtractor] Error: Unknown view type '{view}'.")

@@ -1,10 +1,11 @@
 import cv2
+import os
 import tensorflow as tf
 import numpy as np
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 
 class ViewDetector:
-    def __init__(self, model_path='checkpoints/golf_view_classifier.h5'):
+    def __init__(self, model_path='checkpoints/golf_view_classifier (1).h5'):
         self.model = tf.keras.models.load_model(model_path)
         # self.verdicts = {"['down-the-line']": 0, "['face-on']": 1}
     
@@ -21,16 +22,48 @@ class ViewDetector:
             return 'face-on', prob
         else:
             return 'down-the-line', prob
-    
+        
+    def get_view(self, path)-> str:
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Video file {path} not found.")
+        
+        cap = cv2.VideoCapture(path)
+        sample_frames = np.linspace(0, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) - 1, num=11).astype(int)
+        sample_frames = sample_frames[1:-1]
+
+        list_preds = []
+        for frame_idx in sample_frames:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+            _, test_img = cap.read()
+            pred, prob = self._get_image_view(test_img)
+            list_preds.append(pred)
+
+        cap.release()
+        return max(set(list_preds), key=list_preds.count)
+
+
 if __name__ == '__main__':
     detector = ViewDetector()
-    cap = cv2.VideoCapture(r"D:\Datathon\data\v1\TDTU-Golf-Pose-v1_fix_crop\Public Test\Ngoài trời - Outdoor\Band 2-4\Backside-8900-9_fix_crop.mov")
+    TEST_DIR = r"data/v1/TDTU-Golf-Pose-v1_fix_crop/"
 
-    sample_frames = np.linspace(0, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) - 1, num=7).astype(int)
-    sample_frames = sample_frames[1:-1]
+    paths = []
+    views = []
+    predictions = []
 
-    for frame_idx in sample_frames:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-        _, test_img = cap.read()
-        pred = detector._get_image_view(test_img)
-        print(pred)
+    for root, dirs, files in os.walk(TEST_DIR):
+        for fname in files:
+            vid_path = os.path.join(root, fname)
+            prediction = detector.get_view(vid_path)
+            predictions.append(prediction)
+            paths.append(vid_path)
+            views.append('down-the-line' if vid_path.lower().find('backside') != -1 else 'face-on')
+    
+    import pandas as pd
+    df = pd.DataFrame({
+        'path': paths,
+        'view': views,
+        'prediction': predictions
+    })
+    
+    print(df[df['view'] != df['prediction']]['path'].values)
+

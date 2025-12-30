@@ -23,7 +23,7 @@ class CaddieSetExtractor:
             'l_ankle': 15, 'r_ankle': 16
         }
 
-        self.SELECTED_FEATURES = {
+        self.FACEON_SELECTED_FEATURES = {
             0: ['STANCE-RATIO', 'SHOULDER-ANGLE', 'UPPER-TILT'],
             1: ['SHOULDER-LOC', 'UPPER-TILT', 'RIGHT-ARM-ANGLE', 'LEFT-ARM-ANGLE', 'HIP-SHIFTED', 'HIP-ROTATION', 'HEAD-LOC'],
             2: ['SHOULDER-LOC', 'LEFT-ARM-ANGLE', 'HIP-SHIFTED', 'HIP-ROTATION', 'HEAD-LOC'],
@@ -34,9 +34,10 @@ class CaddieSetExtractor:
             7: ['HIP-SHIFTED', 'FINISH-ANGLE']
         }
 
+        self.DTL_SELECTED_FEATURES = {}
+
         self.norm = Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 
-    # --- Các hàm tính toán hình học (Giữ nguyên Numpy vì nhanh và linh hoạt cho số lượng ít) ---
     def _get_dist(self, a, b):
         return np.linalg.norm(a - b)
 
@@ -48,7 +49,7 @@ class CaddieSetExtractor:
     def _get_slope_angle(self, a, b):
         return np.degrees(np.arctan2(b[1] - a[1], b[0] - a[0]))
 
-    def calculate_all_15_metrics(self, k, address_k):
+    def get_FACEON_metrics(self, k, address_k):
         kp = self.KP
         feats = {}
         
@@ -91,8 +92,73 @@ class CaddieSetExtractor:
         feats['FINISH-ANGLE'] = self._get_slope_angle(l_ank, r_hip)
 
         return feats
+    
 
-    def process_sequence(self, sequence):
+    def get_DTL_metrics(self, k, address_k):
+        """
+        Dựa trên input: k (keypoints hiện tại), address_k (keypoints tại frame 0)
+        """
+        kp = self.KP
+        feats = {}
+
+        nose = k[kp['nose']]
+        l_sho, r_sho = k[kp['l_shoulder']], k[kp['r_shoulder']]
+        l_elb, r_elb = k[kp['l_elbow']], k[kp['r_elbow']]
+        l_wri, r_wri = k[kp['l_wrist']], k[kp['r_wrist']]
+        l_hip, r_hip = k[kp['l_hip']], k[kp['r_hip']]
+        l_kne, r_kne = k[kp['l_knee']], k[kp['r_knee']]
+        l_ank, r_ank = k[kp['l_ankle']], k[kp['r_ankle']]
+
+        # Tính các điểm trung gian
+        mid_shoulder = (l_sho + r_sho) / 2
+        mid_hip = (l_hip + r_hip) / 2
+        
+        # Xử lý thông tin tại Address (Frame 0)
+        if address_k is not None:
+            addr_mid_hip = (address_k[kp['l_hip']] + address_k[kp['r_hip']]) / 2
+            # Reference height: Dùng chiều dài thân người tại address để chuẩn hóa khoảng cách
+            addr_mid_shoulder = (address_k[kp['l_shoulder']] + address_k[kp['r_shoulder']]) / 2
+            ref_len = self._get_dist(addr_mid_shoulder, addr_mid_hip) + 1e-6
+            ref_hip_angle = self._get_slope_angle(address_k[kp['l_hip']], address_k[kp['r_hip']])
+        else:
+            addr_mid_hip = mid_hip
+            ref_len = self._get_dist(mid_shoulder, mid_hip) + 1e-6
+            ref_hip_angle = self._get_slope_angle(l_hip, r_hip)
+
+        # 1. SPINE-ANGLE: Spine angle relative to horizontal
+        # Góc tạo bởi đường nối giữa hông và vai so với phương ngang
+        feats['SPINE-ANGLE'] = abs(self._get_slope_angle(mid_hip, mid_shoulder))
+
+        # 2. LOWER-ANGLE: Angle formed by right pelvis, knee, and ankle (Góc chân phải)
+        feats['LOWER-ANGLE'] = self._get_angle_3p(r_hip, r_kne, r_ank)
+
+        # 3. SHOULDER-ANGLE: Shoulder angle relative to horizontal
+        feats['SHOULDER-ANGLE'] = self._get_slope_angle(r_sho, l_sho)
+
+        # 4. LEFT-ARM-ANGLE: Angle formed by left shoulder, elbow, and wrist
+        feats['LEFT-ARM-ANGLE'] = self._get_angle_3p(l_sho, l_elb, l_wri)
+
+        # 5. RIGHT-ARM-ANGLE: Angle formed by right shoulder, elbow, and wrist
+        feats['RIGHT-ARM-ANGLE'] = self._get_angle_3p(r_sho, r_elb, r_wri)
+
+        # 6. HIP-LINE: Movement of hip relative to Address ratio
+        # Độ dịch chuyển của tâm hông so với vị trí ban đầu (thường xét theo trục X - tiến/lùi)
+        feats['HIP-LINE'] = (mid_hip[0] - addr_mid_hip[0]) / ref_len
+
+        # 7. HIP-ANGLE: Rotation degree of pelvis relative to Address degree
+        # Độ xoay hông (độ dốc đường nối 2 hông) so với lúc setup
+        feats['HIP-ANGLE'] = abs(self._get_slope_angle(l_hip, r_hip) - ref_hip_angle)
+
+        # 8. RIGHT-DISTANCE: Gap between right elbow and the torso ratio
+        # Khoảng cách từ khuỷu tay phải đến tâm hông (hoặc đường sống lưng). 
+        feats['RIGHT-DISTANCE'] = self._get_dist(r_elb, mid_hip) / ref_len
+
+        # 9. LEFT-LEG-ANGLE: Angle formed by left pelvis, knee, and ankle
+        feats['LEFT-LEG-ANGLE'] = self._get_angle_3p(l_hip, l_kne, l_ank)
+
+        return feats
+
+    def process_sequence(self, sequence, view):
         """
         Input: Tensor (1, 8, 3, 160, 160) hoặc (8, 3, 160, 160)
         Output: Numpy array shape (40,)
@@ -109,11 +175,6 @@ class CaddieSetExtractor:
         
         # Ultralytics nhận Tensor [B, C, H, W] trên GPU. Không cần chuyển về numpy
         results = self.pose_model(sequence, verbose=False, conf=0.1)
-        # for i, r in enumerate(results):
-            # print(f"result: {r.keypoints}")
-
-        #Post-processing (Cần convert về CPU numpy để tính toán hình học)
-        # Bước này nhẹ, nên làm ở CPU là ổn
         
         # Tìm Address Keypoints (Frame 0)
         address_kp = None
@@ -129,21 +190,44 @@ class CaddieSetExtractor:
 
         final_feature_vector = []
 
-        for i, res in enumerate(results):
-            if len(res.keypoints) > 0:
-                k = res.keypoints.xy[0].cpu().numpy()
-                all_15_metrics = self.calculate_all_15_metrics(k, address_kp)
-            else:
-                all_15_metrics = self.calculate_all_15_metrics(address_kp, address_kp)
+        if view == 'FACEON':
+            for i, res in enumerate(results):
+                if len(res.keypoints) > 0:
+                    k = res.keypoints.xy[0].cpu().numpy()
+                    all_15_metrics = self.get_FACEON_metrics(k, address_kp)
+                else:
+                    all_15_metrics = self.get_FACEON_metrics(address_kp, address_kp)
 
-            # metrics_to_take = self.SELECTED_FEATURES.get(i, [])
-            # for metric_name in metrics_to_take:
-            #     value = all_15_metrics.get(metric_name, 0.0)
-                # final_feature_vector.append(value)
+                # chỉ lấy các metrics cần thiết
+                metrics_to_take = self.FACEON_SELECTED_FEATURES.get(i, [])
+                for metric_name in metrics_to_take:
+                    value = all_15_metrics.get(metric_name, 0.0)
+                    final_feature_vector.append(value)
 
-            # lấy tất cả 15 metrics
-            for metric_to_take in all_15_metrics.keys():
-                final_feature_vector.append(all_15_metrics[metric_to_take])
+                # lấy tất cả 15 metrics
+                # for metric_to_take in all_15_metrics.keys():
+                #     final_feature_vector.append(all_15_metrics[metric_to_take])
+        elif view == 'DTL':
+            for i, res in enumerate(results):
+                if len(res.keypoints) > 0:
+                    k = res.keypoints.xy[0].cpu().numpy()
+                    all_9_metrics = self.get_DTL_metrics(k, address_kp)
+                else:
+                    all_9_metrics = self.get_DTL_metrics(address_kp, address_kp)
+
+                # chỉ lấy các metrics cần thiết
+                metrics_to_take = self.DTL_SELECTED_FEATURES.get(i, [])
+                for metric_name in metrics_to_take:
+                    value = all_9_metrics.get(metric_name, 0.0)
+                    final_feature_vector.append(value)
+
+                # lấy tất cả 9 metrics
+                # for metric_to_take in all_9_metrics.keys():
+                #     final_feature_vector.append(all_9_metrics[metric_to_take])
+
+        else:
+            print(f"[CaddieSetExtractor] Error: Unknown view type '{view}'.")
+            return np.zeros(40)
 
         return np.array(final_feature_vector)
 

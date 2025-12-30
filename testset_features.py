@@ -27,7 +27,6 @@ def get_video(path):
         _, img = cap.read()
         resized = cv2.resize(img, (new_size[1], new_size[0]))
         b_img = cv2.copyMakeBorder(resized, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0.406 * 255, 0.456 * 255, 0.485 * 255])  # ImageNet means (BGR)
-
         b_img_rgb = cv2.cvtColor(b_img, cv2.COLOR_BGR2RGB)
         images.append(b_img_rgb)
     cap.release()
@@ -90,6 +89,7 @@ if __name__ == '__main__':
             events = np.argmax(probs, axis=0)[:-1]
             print(f"Event: {events}") # (8,)
             # print(images.shape) # torch.Size([1, 223, 3, 160, 160])
+            # exit()
             sequence = images[:,events,:,:,:] # torch.Size([1, 8, 3, 160, 160])
 
             print(f"Loaded video frames shape: {sequence.shape}")  

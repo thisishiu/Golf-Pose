@@ -1,0 +1,8 @@
+stages:
+  fix-crop_test_video:
+    cmd: python testset_fix_crop.py
+    deps:
+    - data\raw\TDTU-Golf-Pose-v1
+    - preprocessing\fix_crop_video.py
+    outs:
+    - data\v1\TDTU-Golf-Pose-v1_fix_crop

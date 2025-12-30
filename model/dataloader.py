@@ -20,6 +20,7 @@ class GolfDB(Dataset):
 
     def __getitem__(self, idx):
         a = self.df.loc[idx, :]  # annotation info
+        view = a['view']
         events = a['events']
         events -= events[0]  # now frame #s correspond to frames in preprocessed video clips
 
@@ -64,7 +65,8 @@ class GolfDB(Dataset):
             'images': np.asarray(images), 
             'labels': np.asarray(labels),
             'events': np.asarray(events[1:-1]),
-            'path': path
+            'path': path,
+            'view': view
             }
         if self.transform:
             sample = self.transform(sample)
@@ -75,13 +77,13 @@ class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
     def __call__(self, sample):
         images, labels = sample['images'], sample['labels']
-        # print(type(images), images.shape)
         images = images.transpose((0, 3, 1, 2))
         return {
             'images': torch.from_numpy(images).float().div(255.),
             'labels': torch.from_numpy(labels).long(),
             'events': torch.from_numpy(sample['events']).long() if sample.get('events') is not None else None,
-            'path': sample.get('path', None)
+            'path': sample.get('path', None),
+            'view': sample.get('view', None)
             }
 
 
@@ -98,7 +100,8 @@ class Normalize(object):
             'images': images,
             'labels': labels,
             'events': sample['events'] if sample.get('events') is not None else None,
-            'path': sample.get('path', None)
+            'path': sample.get('path', None),
+            'view': sample.get('view', None)
             }
 
     def inverse(self, tensor):
@@ -127,7 +130,7 @@ if __name__ == '__main__':
     for i, sample in enumerate(data_loader):
         images, labels = sample['images'], sample['labels']
         events = np.where(labels.squeeze() < 8)[0]
-        print(sample['events'])
+        print(sample)
         # print('{} events: {}'.format(len(events), events))
 
 

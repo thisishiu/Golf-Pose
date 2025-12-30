@@ -43,3 +43,7 @@
   - dự đoán là dùng CNN / MobileNetV2 **[bỏ, dectect góc quay sau khi dự đoán khung xương bằng yolo]**
   - => tiến hành label tập train (golfdb), label góc quay là 'back' hay 'side' [bỏ, đã có label]
   - trong repo golfdb, tác giả đã label sẵn (`golfdb_master\data\golfDB.mat`)
+
+- Lấy đầu ra YoloPose làm model view detect **[bỏ, cách này phá pipeline]**
+
+- Từ video đầu vào, lấy ngẫu nhiên các frame (số lẻ) -> model CNN/MobileNetV2 để detect góc quay -> lấy mode (chế độ) của các kết quả đó làm góc quay của video

@@ -1,0 +1,20 @@
+schema: '2.0'
+stages:
+  fix-crop_test_video:
+    cmd: python testset_fix_crop.py
+    deps:
+    - path: data\raw\TDTU-Golf-Pose-v1
+      hash: md5
+      md5: e226e6087716e3429c7592acb2b90d96.dir
+      size: 521226574
+      nfiles: 50
+    - path: preprocessing\fix_crop_video.py
+      hash: md5
+      md5: ee71d401ca7388e4469637717602fdfc
+      size: 4763
+    outs:
+    - path: data\v1\TDTU-Golf-Pose-v1_fix_crop
+      hash: md5
+      md5: 8b81b7131b0d3967a153c30ed4dcee9a.dir
+      size: 12916018
+      nfiles: 50
